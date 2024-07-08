@@ -1,8 +1,9 @@
-# Tech docs tools
+# Tech docs sandbox
 
-Scripts written and used in technical documentation.
+Jupyter notebooks for technical exploration & Python scripts for docs infrastructure.
 
-You can search for specific file extensions using a command similar to the following:
+Search for Python scripts in existing files using the following command:
+
 ```
 find /Users/victorialim/Documents/work_projects -type f -name "*.py"
 ```
