@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message SomeMessage {
+    string timestamp = 1;
+    string city = 2;
+    string session = 3;
+    uint32 session_length = 4;
+}

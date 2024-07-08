@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "namespace": "io.imply",
+  "name": "KttmEvent",
+  "fields": [
+    {
+      "name": "timestamp",
+      "type": "string"
+    },
+    {
+      "name": "city",
+      "type": "string"
+    },
+    {
+      "name": "session",
+      "type": "string"
+    },
+    {
+      "name": "session_length",
+      "type": "long"
+    }
+  ]
+}
