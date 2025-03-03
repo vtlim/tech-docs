@@ -1,8 +1,8 @@
-# Tech docs sandbox
+# Tech docs collection
 
-Jupyter notebooks for technical exploration & Python scripts for docs infrastructure.
+A repository to store scripts for docs-as-code infrastructure and technical projects.
 
-Search for Python scripts in existing files using the following command:
+Adding to this repo: search for scripts using the following command:
 
 ```
 find /Users/victorialim/Documents/work_projects -type f -name "*.py"
