@@ -1,0 +1,66 @@
+name: Build Cloud Manager API reference
+on:
+  pull_request:
+    paths: 
+    - 'schemas/intro-manager.yaml'
+    - 'schemas/merged-upstream-manager.yaml'
+    - 'scripts/sync'
+    - 'scripts/sync-manager.json'
+    branches-ignore:
+    - 'nobuild-**'
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Install dependencies
+        run: npm install
+
+      # Make sure we're building the right file
+      # like scripts/preprocess but for ubuntu
+      - name: Preprocess scripts
+        run: |
+          sed -i 's/root:.*/root: .\/schemas\/merged-upstream-manager.yaml/g' redocly.yaml
+
+          printf "mkdir -p dist/manager"\
+          "\nmv dist/*.yaml dist/manager"\
+          "\nmkdir -p website/manager"\
+          "\nmv website/*.html website/manager" > scripts/postprocess
+          chmod +x scripts/postprocess
+
+      - name: Build Polaris doc
+        run: npm run publish
+
+      # aws s3 cp website/manager/api-reference.html s3://static.imply.io/_dev_docs-site/api/manager/api-reference.html
+      # uses Victoria's AWS long-term credentials
+      - name: Sync to dev docs site
+        uses: jakejarvis/s3-sync-action@master
+        env:
+          AWS_S3_BUCKET: 'static.imply.io'
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          SOURCE_DIR: './website/manager'
+          DEST_DIR: '_dev_docs-site/api/manager'
+
+      - name: Add updated files to PR
+        continue-on-error: true # False error may result when there is no yaml or html to commit
+        run: |
+          git config user.name "$(git log -n 1 --pretty=format:%an)"
+          git config user.email "$(git log -n 1 --pretty=format:%ae)"
+          git add website/manager/api-reference.html
+          git add schemas/merged-upstream-manager.yaml
+          git commit -m "Auto-updating files from build (manager)"
+          git push
+
+      - name: Comment on PR
+        uses: thollander/actions-comment-pull-request@v1
+        with:
+          message: |
+            Preview doc at https://dev-docs.imply.io/api/manager/api-reference
+          comment_includes: Preview doc at 

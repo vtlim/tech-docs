@@ -1,0 +1,3 @@
+implydata/imply-docs-saas@polaris.next:
+  - source: website/polaris/api-reference.html
+    dest: website/static/api/polaris/api-reference.html

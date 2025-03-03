@@ -1,0 +1,3 @@
+implydata/imply-docs-saas@main:
+  - source: website/manager/api-reference.html
+    dest: website/static/api/manager/api-reference.html

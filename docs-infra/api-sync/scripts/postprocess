@@ -1,0 +1,4 @@
+mkdir -p dist/polaris
+mv dist/*.yaml dist/polaris
+mkdir -p website/polaris
+mv website/*.html website/polaris

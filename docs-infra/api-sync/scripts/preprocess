@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+# Preprocesses configuration files before generating API docs
+# $1 in this script should refer to a supported pattern in
+# the sync script and its corresponding sync-*.json
+# such as polaris or manager
+
+# replace file names in redocly.yaml 
+sed -i '' "/root:/c\ 
+    root: ./schemas/merged-upstream-$1.yaml
+" redocly.yaml
+
+# generate postprocessing script
+printf "mkdir -p dist/$1"\
+"\nmv dist/*.yaml dist/$1"\
+"\nmkdir -p website/$1"\
+"\nmv website/*.html website/$1" > scripts/postprocess
+chmod +x scripts/postprocess

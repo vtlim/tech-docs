@@ -1,0 +1,40 @@
+{
+  "name": "@implydata/imply-docs-api",
+  "private": true,
+  "version": "0.0.0-VERSION",
+  "description": "OpenAPI clients for internal APIs",
+  "repository": {
+    "url": "https://github.com/implydata/imply-docs-api"
+  },
+  "author": "Imply",
+  "license": "SEE LICENSE IN LICENSE",
+  "bugs": {
+    "url": "https://github.com/implydata/imply-docs-api/issues"
+  },
+  "homepage": "https://github.com/implydata/imply-docs-api#readme",
+  "scripts": {
+    "bundle:all": "npm run bundle:external && npm run bundle:internal",
+    "bundle:external": "redocly bundle external@latest --output dist/external.yaml --remove-unused-components",
+    "bundle:internal": "redocly bundle internal@latest --output dist/internal.yaml --remove-unused-components",
+    "preprocess:manager": "scripts/preprocess manager",
+    "preprocess:polaris": "scripts/preprocess polaris",
+    "preview-docs": "npm run bundle:external && redocly preview-docs dist/external.yaml",
+    "preview-docs:internal": "npm run bundle:internal && redocly preview-docs dist/internal.yaml",
+    "publish": "npm run bundle:external && redocly build-docs dist/external.yaml -o website/api-reference.html && scripts/postprocess",
+    "publish:internal": "npm run bundle:internal && redocly build-docs dist/internal.yaml -o website/api-reference-internal.html && scripts/postprocess",
+    "lint:all": "npm run lint:external && npm run lint:internal",
+    "lint:external": "npm run bundle:external && redocly lint dist/external.yaml",
+    "lint:internal": "npm run bundle:internal && redocly lint dist/internal.yaml",
+    "sync": "./scripts/sync remote polaris",
+    "sync-local-polaris": "./scripts/sync local polaris",
+    "sync-remote-polaris": "./scripts/sync remote polaris",
+    "sync-local-manager": "./scripts/sync local manager",
+    "sync-remote-manager": "./scripts/sync remote manager"
+  },
+  "dependencies": {
+    "@awesome-code-style/prettier-config": "^5.0.0",
+    "@redocly/cli": "1.21.1",
+    "yaml": "^2.5.0"
+  },
+  "prettier": "@awesome-code-style/prettier-config"
+}

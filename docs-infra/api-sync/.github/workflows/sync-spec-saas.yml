@@ -1,0 +1,75 @@
+name: Sync saas-services
+on:
+  schedule:
+    - cron: '0 21 * * 1-5'
+  workflow_dispatch:
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      # Get latest SHA of saas-services
+      - name: Check latest SHA in saas-services
+        uses: actions/checkout@v3
+        with:
+          repository: implydata/saas-services
+          ref: main
+          token: ${{ secrets.SYNC_API_TOKEN }}
+          path: saas-services
+      - name: Declare latest SHA variables
+        id: vars
+        shell: bash
+        run: |
+          echo "::set-output name=saas_services_sha::$(git -C saas-services rev-parse HEAD)"
+
+      # Patch sync file
+      - name: Checkout imply-docs-api
+        uses: actions/checkout@v3
+        with:
+          repository: implydata/imply-docs-api
+      - name: Patch sync file with new version
+        run: |
+          sed -i -E 's/(saas_services_revision)=".+"/\1="${{ steps.vars.outputs.saas_services_sha }}"/' scripts/sync
+
+      # Make sure we're building the right file
+      # like scripts/preprocess but for ubuntu
+      - name: Preprocess scripts
+        run: |
+          sed -i 's/root:.*/root: .\/schemas\/merged-upstream-polaris.yaml/g' redocly.yaml
+
+          printf "mkdir -p dist/polaris"\
+          "\nmv dist/*.yaml dist/polaris"\
+          "\nmkdir -p website/polaris"\
+          "\nmv website/*.html website/polaris" > scripts/postprocess
+          chmod +x scripts/postprocess
+
+      # Run the sync script
+      - name: Sync API definitions
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - run: |
+          GITHUB_OAUTH_TOKEN=${{ secrets.SYNC_API_TOKEN }} npm run sync
+
+      # Create a pull request containing the new sync if there are changes
+      - name: Detect schema changes
+        id: schema_changes
+        continue-on-error: true # Exit code 1 (failure) means there _are_ changes
+        run: |
+          git diff --quiet schemas
+      - name: Create Pull Request
+        id: cpr
+        uses: peter-evans/create-pull-request@v4
+        if: ${{ steps.schema_changes.outcome == 'failure' }}
+        with:
+          title: '[Polaris] Update spec from saas-services'
+          add-paths: |
+            schemas/
+            scripts/sync
+          commit-message: Update report
+          branch-suffix: timestamp
+          delete-branch: true
+          labels: |
+            sync
+          team-reviewers: |
+            @implydata/techdocs
+          token: ${{ secrets.SYNC_API_TOKEN }}

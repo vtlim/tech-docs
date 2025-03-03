@@ -1,0 +1,116 @@
+{
+  "inputs": [
+    {
+      "inputFile": "../schemas/intro-polaris.yaml"
+    },
+    {
+      "inputFile": "./upstream/pivot/alerts_bundled.yaml",
+      "pathModification": {
+        "prepend": "/v1/projects/{projectId}"
+      }
+    },
+    {
+      "inputFile": "./upstream/apikeys_bundled.yaml",
+      "pathModification": {
+        "prepend": "/v1"
+      }
+    },
+    {
+      "inputFile": "./upstream/network-policy_bundled.yaml",
+      "pathModification": {
+        "prepend": "/v1"
+      }
+    },
+    {
+      "inputFile": "./upstream/audit_bundled.yaml",
+      "pathModification": {
+        "prepend": "/v1"
+      }
+    },
+    {
+      "inputFile": "./upstream/schemas.yaml"
+    },
+    {
+      "inputFile": "./upstream/collections.yaml"
+    },
+    {
+      "inputFile": "./upstream/tables/connections_bundled.yaml"
+    },
+    {
+      "inputFile": "./upstream/customizations.yaml"
+    },
+    {
+      "inputFile": "./upstream/pivot/dashboards_bundled.yaml",
+      "pathModification": {
+        "prepend": "/v1/projects/{projectId}"
+      }
+    },
+    {
+      "inputFile": "./upstream/pivot/data-cubes_bundled.yaml",
+      "pathModification": {
+        "prepend": "/v1/projects/{projectId}"
+      }
+    },
+    {
+      "inputFile": "./upstream/pivot/embed_bundled.yaml",
+      "pathModification": {
+        "prepend": "/v0/projects/{projectId}/pivot/api/v1"
+      }
+    },
+    {
+      "inputFile": "./upstream/pivot/embedding-links_bundled.yaml",
+      "pathModification": {
+        "prepend": "/v1/projects/{projectId}"
+      }
+    },
+    {
+      "inputFile": "./upstream/eventcollector.yaml",
+      "pathModification": {
+        "prepend": "/v1"
+      }
+    },
+    {
+      "inputFile": "./upstream/tables/files_bundled.yaml"
+    },
+    {
+      "inputFile": "./upstream/tables/lookups_bundled.yaml"
+    },
+    {
+      "inputFile": "./upstream/identity_bundled.yaml",
+      "pathModification": {
+        "prepend": "/v1"
+      }
+    },
+    {
+      "inputFile": "./upstream/tables/jobs_bundled.yaml"
+    },
+    {
+      "inputFile": "./upstream/metrics.yaml",
+      "pathModification": {
+        "prepend": "/v1"
+      }
+    },
+    {
+      "inputFile": "./upstream/projects.yaml",
+      "operationSelection": {
+        "excludeTags": ["x-docs-internal"]
+      },
+      "pathModification": {
+        "prepend": "/v1"
+      }
+    },
+    {
+      "inputFile": "./upstream/tables/polaris-query_bundled.yaml"
+    },
+    {
+      "inputFile": "./upstream/pivot/reports_bundled.yaml",
+      "pathModification": {
+        "prepend": "/v1/projects/{projectId}"
+      }
+    },
+    {
+      "inputFile": "./upstream/tables/tables_bundled.yaml"
+    }
+  ],
+  "output": "../schemas/merged-upstream-polaris.yaml"
+}

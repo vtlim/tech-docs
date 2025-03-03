@@ -1,0 +1,11 @@
+{
+  "inputs": [
+    {
+      "inputFile": "../schemas/intro-manager.yaml"
+    },
+    {
+      "inputFile": "./upstream/clusters.yaml"
+    }
+  ],
+  "output": "../schemas/merged-upstream-manager.yaml"
+}

@@ -1,0 +1,225 @@
+#!/usr/bin/env bash
+
+################################################################################
+#
+# Fetches the latest OpenAPI schemas from our upstream repositories and
+# merges them into a single output, <project>/schemas/merged-upstream-openapi.yaml.
+#
+# Prerequisites:
+#   Remote sync requires a GitHub authentication token.
+#   Local sync requires these repos to be in the same location:
+#   `imply-docs-api`, `repo3`, `repo1`, `repo2`
+#
+# Usage:    sync [source] [docs]
+#           source: specify `remote` to sync from remote repository or `local` to sync from local repositories
+#           docs: `polaris` or `manager`
+#
+# Examples: (1) sync remote polaris, (2) sync local polaris, (3) sync remote manager
+#
+################################################################################
+
+# Parse command line arguments and define defaults if not set
+SOURCE="${1:-remote}"
+API_DOCS="${2:-polaris}"
+
+# Directories for use in this script
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+UPSTREAM_DIR="$SCRIPT_DIR/upstream"
+SCHEMAS_DIR="$SCRIPT_DIR/../schemas"
+
+mkdir -p $UPSTREAM_DIR
+mkdir -p $SCHEMAS_DIR
+
+# Commit hash from GitHub repositories for download version
+repo1_revision="09779d7cb758d738015730c1ee1deade5a7375ab"
+repo2_revision="e01c7ad2fe843ec303d469c76965f78d41bdfa83"
+repo3_revision="234032bad3e14f4e027c23515f3e1e7413d0c608"
+
+# Function to download schema from remote repository
+download_schema() {
+  local repo="$1"
+  local ref="$2"
+  local schema_path="$3"
+
+  curl -sSL \
+    -H "Authorization: token ${GITHUB_OAUTH_TOKEN}" \
+    -H "Accept: application/vnd.github.v3.raw" \
+    "https://api.github.com/repos/ORG/${repo}/contents/${schema_path}?ref=${ref}"
+}
+
+# Function to copy schema from local repository
+# TODO: we don't need ref here so update this function
+# as well as download_schema to put this variable last
+# and just ignore it in this script
+copy_schema() {
+  local repo="$1"
+  local ref="$2"
+  local schema_path="$3"
+
+  local full_path="$SCRIPT_DIR"/../../"$repo"/"$schema_path"
+  cat $full_path
+}
+
+# Determine which function to use
+if [[ "$SOURCE" = "remote" ]] ; then
+    readonly sync_method="download_schema"
+
+    # Verify that a token is set
+    if [ -z "${GITHUB_OAUTH_TOKEN:-}" ]; then
+      echo "\$GITHUB_OAUTH_TOKEN must be set. Visit https://github.com/settings/tokens to generate a new \
+    personal access token with the \"repo\" scope."
+      exit 1
+    fi
+
+elif [[ "$SOURCE" = "local" ]] ; then
+    readonly sync_method="copy_schema"
+fi
+
+################################################################################
+# Download OpenAPI Schemas
+################################################################################
+
+if [[ "$API_DOCS" = "manager" ]] ; then
+  # Public Manager API
+  $sync_method "repo2" $repo2_revision "aws/src/main/resources/openapi/clusters.yaml" > $UPSTREAM_DIR/clusters.yaml
+
+elif [[ "$API_DOCS" = "polaris" ]] ; then
+
+  # generate some temp directories
+  mkdir -p $UPSTREAM_DIR/tables
+  mkdir -p $UPSTREAM_DIR/pivot
+
+  # API Keys API
+  $sync_method "repo2" $repo2_revision "keycloak-extensions/keycloak-identity-management-api/src/main/resources/openapi/apikeys.yaml" > $UPSTREAM_DIR/apikeys.yaml
+  $sync_method "repo2" $repo2_revision "keycloak-extensions/keycloak-identity-management-api/src/main/resources/openapi/schemas.yaml" > $UPSTREAM_DIR/schemas.yaml
+
+  # Identity management API
+  $sync_method "repo2" $repo2_revision "keycloak-extensions/keycloak-identity-management-api/src/main/resources/openapi/identity.yaml" > $UPSTREAM_DIR/identity.yaml
+
+  # Network policy API
+  $sync_method "repo2" $repo2_revision "saas/src/main/resources/openapi/network-policy.yaml" > $UPSTREAM_DIR/network-policy.yaml
+
+  # Audit API
+  $sync_method "repo3" $repo3_revision "audit/openapi/audit.yaml" > $UPSTREAM_DIR/audit.yaml
+  $sync_method "repo3" $repo3_revision "audit/openapi/common.yaml" > $UPSTREAM_DIR/common.yaml
+
+  # Customizations API
+  $sync_method "repo3" $repo3_revision "visuals/openapi/customizations.yaml" > $UPSTREAM_DIR/customizations.yaml
+
+  # Collections API
+  $sync_method "repo3" $repo3_revision "visuals/openapi/collections.yaml" > $UPSTREAM_DIR/collections.yaml
+
+  # Public projects APIs
+  $sync_method "repo2" $repo2_revision "saas/src/main/resources/openapi/projects.yaml" > $UPSTREAM_DIR/projects.yaml
+
+  # Event collector API
+  $sync_method "repo3" $repo3_revision "eventcollector/src/main/resources/openapi/openapi.yaml" > $UPSTREAM_DIR/eventcollector.yaml
+
+  # Tables service APIs
+  $sync_method "repo3" $repo3_revision "tables/src/main/resources/openapi/openapi.yaml" > $UPSTREAM_DIR/tables/openapi.yaml
+  $sync_method "repo3" $repo3_revision "tables/src/main/resources/openapi/common-schemas.yaml" > $UPSTREAM_DIR/tables/common-schemas.yaml
+  $sync_method "repo3" $repo3_revision "tables/src/main/resources/openapi/connections.yaml" > $UPSTREAM_DIR/tables/connections.yaml
+  $sync_method "repo3" $repo3_revision "tables/src/main/resources/openapi/druid-compat.yaml" > $UPSTREAM_DIR/tables/druid-compat.yaml
+  $sync_method "repo3" $repo3_revision "tables/src/main/resources/openapi/files.yaml" > $UPSTREAM_DIR/tables/files.yaml
+  $sync_method "repo3" $repo3_revision "tables/src/main/resources/openapi/lookups.yaml" > $UPSTREAM_DIR/tables/lookups.yaml
+  $sync_method "repo3" $repo3_revision "tables/src/main/resources/openapi/jobs.yaml" > $UPSTREAM_DIR/tables/jobs.yaml
+  $sync_method "repo3" $repo3_revision "tables/src/main/resources/openapi/sampling.yaml" > $UPSTREAM_DIR/tables/sampling.yaml
+  $sync_method "repo3" $repo3_revision "tables/src/main/resources/openapi/sql-statements.yaml" > $UPSTREAM_DIR/tables/sql-statements.yaml
+  $sync_method "repo3" $repo3_revision "tables/src/main/resources/openapi/tables.yaml" > $UPSTREAM_DIR/tables/tables.yaml
+
+  # Analytics APIs
+  $sync_method "repo1" $repo1_revision "packages/apis/schemas/_common-pivot-schemas.yaml" > $UPSTREAM_DIR/pivot/_common-pivot-schemas.yaml
+  $sync_method "repo1" $repo1_revision "packages/apis/schemas/_common-schemas.yaml" > $UPSTREAM_DIR/pivot/_common-schemas.yaml
+  $sync_method "repo1" $repo1_revision "packages/apis/schemas/_customizations.yaml" > $UPSTREAM_DIR/pivot/_customizations.yaml
+  $sync_method "repo1" $repo1_revision "packages/apis/schemas/alerts.yaml" > $UPSTREAM_DIR/pivot/alerts.yaml
+  $sync_method "repo1" $repo1_revision "packages/apis/schemas/dashboards.yaml" > $UPSTREAM_DIR/pivot/dashboards.yaml
+  $sync_method "repo1" $repo1_revision "packages/apis/schemas/data-cubes.yaml" > $UPSTREAM_DIR/pivot/data-cubes.yaml
+  $sync_method "repo1" $repo1_revision "packages/apis/schemas/embed.yaml" > $UPSTREAM_DIR/pivot/embed.yaml
+  $sync_method "repo1" $repo1_revision "packages/apis/schemas/embedding-links.yaml" > $UPSTREAM_DIR/pivot/embedding-links.yaml
+  $sync_method "repo1" $repo1_revision "packages/apis/schemas/reports.yaml" > $UPSTREAM_DIR/pivot/reports.yaml
+
+  # Metrics API
+  $sync_method "repo3" $repo3_revision "metrics/src/main/resources/openapi/openapi.yaml" > $UPSTREAM_DIR/metrics.yaml
+fi
+
+# Lifecycle APIs
+#$sync_method "repo1" $repo1_revision "packages/apis/schemas/lifecycle.yaml" > $UPSTREAM_DIR/lifecycle.yaml
+
+# Internal cloud APIs
+#$sync_method "repo2" $repo2_revision "saas/src/main/resources/openapi/internal.yaml" > $UPSTREAM_DIR/cloud-internal-raw.yaml
+#npx -y @apiture/api-ref-resolver --input $UPSTREAM_DIR/cloud-internal-raw.yaml --output $UPSTREAM_DIR/cloud-internal.yaml
+#./strip-resolved-tags.js x-resolved-from x-resolved-at < $UPSTREAM_DIR/cloud-internal.yaml > $UPSTREAM_DIR/cloud-internal.json
+
+# Public billing APIs
+# If these are made public, we'll need to resolve references using redocly bundle like for tables service endpoints
+#$sync_method "repo3" $repo3_revision "billing/src/main/resources/openapi/openapi.yaml" > $UPSTREAM_DIR/billing.yaml
+
+# Internal billing APIs
+#$sync_method "repo3" $repo3_revision "billing/src/main/resources/openapi/internal.yaml" > $UPSTREAM_DIR/billing-internal.yaml
+
+
+################################################################################
+# Process OpenAPI Schemas
+################################################################################
+
+# Strip any line with a `docs-internal` comment
+# Different pattern for local since zsh on macos can't use '\s'
+if [[ "$SOURCE" = "remote" ]] ; then
+    find $UPSTREAM_DIR -type f -name "*.yaml" -exec sed -i.bak "/#\s*docs-internal/d" {} \;
+elif [[ "$SOURCE" = "local" ]] ; then
+    find $UPSTREAM_DIR -type f -name "*.yaml" -exec sed -i.bak "/#[[:space:]]*docs-internal/d" {} \;
+fi
+
+# Strip lines containing internal Imply vendor extensions (x-...)
+# This is not a breaking change if it doesn't happen, but removing them hides these from being in the downloaded spec
+find $UPSTREAM_DIR -type f -name "*.yaml" -exec sed -i.bak "/x-imply-view:/d" {} \;
+find $UPSTREAM_DIR -type f -name "*.yaml" -exec sed -i.bak "/x-imply-constraint:/d" {} \;
+find $UPSTREAM_DIR -type f -name "*.yaml" -exec sed -i.bak "/x-imply-nullable-array:/d" {} \;
+
+# Create resolved version of Polaris APIs
+# This resolves references from one spec (e.g., tables.yaml) to another (e.g., common-schemas.yaml)
+
+if [[ "$API_DOCS" = "polaris" ]] ; then
+
+  # SECURITY APIs
+  npx -y @redocly/cli bundle $UPSTREAM_DIR/apikeys.yaml --output $UPSTREAM_DIR/apikeys_bundled.yaml
+  npx -y @redocly/cli bundle $UPSTREAM_DIR/identity.yaml --output $UPSTREAM_DIR/identity_bundled.yaml
+
+  # TABLES APIs
+  npx -y @redocly/cli bundle $UPSTREAM_DIR/tables/connections.yaml --output $UPSTREAM_DIR/tables/connections_bundled.yaml
+  npx -y @redocly/cli bundle $UPSTREAM_DIR/tables/files.yaml --output $UPSTREAM_DIR/tables/files_bundled.yaml
+  npx -y @redocly/cli bundle $UPSTREAM_DIR/tables/lookups.yaml --output $UPSTREAM_DIR/tables/lookups_bundled.yaml
+  npx -y @redocly/cli bundle $UPSTREAM_DIR/tables/jobs.yaml --output $UPSTREAM_DIR/tables/jobs_bundled.yaml
+  npx -y @redocly/cli bundle $UPSTREAM_DIR/tables/tables.yaml --output $UPSTREAM_DIR/tables/tables_bundled.yaml
+
+  # PIVOT APIs
+  npx -y @redocly/cli bundle $UPSTREAM_DIR/pivot/alerts.yaml          --output $UPSTREAM_DIR/pivot/alerts_bundled.yaml
+  npx -y @redocly/cli bundle $UPSTREAM_DIR/pivot/dashboards.yaml      --output $UPSTREAM_DIR/pivot/dashboards_bundled.yaml
+  npx -y @redocly/cli bundle $UPSTREAM_DIR/pivot/data-cubes.yaml      --output $UPSTREAM_DIR/pivot/data-cubes_bundled.yaml
+  npx -y @redocly/cli bundle $UPSTREAM_DIR/pivot/embed.yaml           --output $UPSTREAM_DIR/pivot/embed_bundled.yaml
+  npx -y @redocly/cli bundle $UPSTREAM_DIR/pivot/embedding-links.yaml --output $UPSTREAM_DIR/pivot/embedding-links_bundled.yaml
+  npx -y @redocly/cli bundle $UPSTREAM_DIR/pivot/reports.yaml         --output $UPSTREAM_DIR/pivot/reports_bundled.yaml
+
+  # NETWORK POLICY
+  npx -y @redocly/cli bundle $UPSTREAM_DIR/network-policy.yaml         --output $UPSTREAM_DIR/network-policy_bundled.yaml
+
+  # AUDIT API
+  npx -y @redocly/cli bundle $UPSTREAM_DIR/audit.yaml        --output $UPSTREAM_DIR/audit_bundled.yaml
+
+  # QUERY API
+  cp $SCHEMAS_DIR/polaris-query.yaml $UPSTREAM_DIR/tables/polaris-query.yaml
+  npx -y @redocly/cli bundle $UPSTREAM_DIR/tables/polaris-query.yaml --output $UPSTREAM_DIR/tables/polaris-query_bundled.yaml
+fi
+
+################################################################################
+# Merge OpenAPI Schemas
+################################################################################
+
+(cd $SCRIPT_DIR && npx -y openapi-merge-cli --config sync-${API_DOCS}.json)
+
+
+################################################################################
+# Cleanup
+################################################################################
+
+rm -rf $UPSTREAM_DIR

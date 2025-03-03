@@ -1,0 +1,15 @@
+extends:
+  - recommended
+
+apis:
+  internal@latest:
+    root: ./schemas/merged-upstream-polaris.yaml
+  external@latest:
+    root: ./schemas/merged-upstream-polaris.yaml
+    decorators:
+      remove-x-internal: on
+
+theme:
+  openapi:
+    requiredPropsFirst: true
+    sortPropsAlphabetically: true
