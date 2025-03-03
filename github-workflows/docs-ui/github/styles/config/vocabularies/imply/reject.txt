@@ -1,0 +1,3 @@
+(?i)iow
+[Pp]re-cach(e|ed)
+

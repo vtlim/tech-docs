@@ -1,0 +1,43 @@
+name: Identify copy for UI
+
+# runs on PRs to main or x-main
+# can also be run manually
+on:
+  push: # TEMP for testing
+    branches:
+      - x-docs-ui
+  pull_request:
+    types: [opened, reopened]
+    branches:
+      - x-main
+      - main
+  workflow_dispatch:
+
+jobs:
+  extract_ui_copy:
+    runs-on: [self-hosted, imply-ubuntu-latest]
+    steps:
+
+    # check out docs repo
+    - name: Checkout
+      uses: actions/checkout@main
+      with:
+        fetch-depth: 2
+
+    # install python and process markdown files
+    - uses: ./.github/actions/ui_copy
+
+    # check csv file for changes
+    - name: Detect changed spreadsheet
+      id: check_changes
+      continue-on-error: true
+      run: |
+        git diff --quiet x_ui_copy.csv
+
+    # if changed, add csv to this PR
+    - name: Commit and push changes
+      if: steps.check_changes.outcome != 'success'
+      run: |
+          git add x_ui_copy.csv
+          git commit -m "Updated UI copy reference spreadsheet"
+          git push

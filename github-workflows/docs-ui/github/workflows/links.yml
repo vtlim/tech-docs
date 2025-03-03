@@ -1,0 +1,19 @@
+name: Check all links daily
+on:
+  # run at 2pm Pacific, Mon-Fri
+  schedule:
+    - cron: '0 21 * * 1-5'
+
+jobs:
+  links:
+    runs-on: [self-hosted, imply-ubuntu-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@main
+      - name: Markdown link check
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          base-branch: 'main'
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'yes'
+          folder-path: 'enterprise, polaris'
