@@ -5,7 +5,7 @@ ui_copy.py
 
 Version:        27 Feb 2025
 
-Purpose:        Parses docs to pull out copy for the IOW UI
+Purpose:        Parses docs to pull out copy for the X UI
                 Looks for content in the X docs folder
                 for anything within Markdown comments
                 {/* ui_label_start /*} and {/* ui_label_end /*}
