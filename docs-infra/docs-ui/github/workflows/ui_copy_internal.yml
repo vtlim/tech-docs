@@ -1,4 +1,4 @@
-name: Identify copy for UI
+name: Validate and record UI copy
 
 # runs on PRs to main or x-main
 # can also be run manually
@@ -24,8 +24,13 @@ jobs:
       with:
         fetch-depth: 2
 
-    # install python and process markdown files
-    - uses: ./.github/actions/ui_copy
+    # install python
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+
+    # generate markdown files
+    - run: python website/script/ui_copy.py
 
     # check csv file for changes
     - name: Detect changed spreadsheet
